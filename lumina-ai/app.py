@@ -1,59 +1,35 @@
-
 import streamlit as st
-
-st.write("1")
-
 from database.auth import create_user, login_user
-st.write("2")
-
 from database.stats import add_xp, get_stats
-st.write("3")
-
-
 from utils.gemini_client import get_gemini_response
-
-
 
 # ----------------------------
 # PAGE CONFIG
 # ----------------------------
-
 st.set_page_config(
     page_title="Lumina AI",
     page_icon="🧠",
     layout="wide"
 )
 
-
 # ----------------------------
 # SESSION STATE
 # ----------------------------
-
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
 if "username" not in st.session_state:
     st.session_state.username = ""
 
-if "xp" not in st.session_state:
-    st.session_state.xp = 120
-
-if "streak" not in st.session_state:
-    st.session_state.streak = 5
-
-
 # ----------------------------
 # HEADER
 # ----------------------------
-
 st.title("🧠 Lumina AI")
 st.subheader("Illuminating the Path to Intelligent Learning")
 
-
-# ----------------------------
+# ==================================================
 # LOGIN / SIGNUP
-# ----------------------------
-
+# ==================================================
 if not st.session_state.logged_in:
 
     menu = st.sidebar.selectbox(
@@ -64,9 +40,7 @@ if not st.session_state.logged_in:
     # ----------------------------
     # SIGNUP
     # ----------------------------
-
     if menu == "Signup":
-
         st.header("Create Account")
 
         username = st.text_input("Username")
@@ -76,64 +50,63 @@ if not st.session_state.logged_in:
         )
 
         if st.button("Signup"):
-
-            success = create_user(
-                username,
-                password
-            )
-
-            if success:
-                st.success(
-                    "Account created successfully!"
-                )
-
+            if not username or not password:
+                st.error("Please enter username and password.")
             else:
-                st.error(
-                    "Username already exists!"
+                success = create_user(
+                    username,
+                    password
                 )
+
+                if success:
+                    st.success(
+                        "Account created successfully!"
+                    )
+                else:
+                    st.error(
+                        "Username already exists!"
+                    )
 
     # ----------------------------
     # LOGIN
     # ----------------------------
-
     else:
-
         st.header("Login")
 
-        username = st.text_input(
-            "Username"
-        )
-
+        username = st.text_input("Username")
         password = st.text_input(
             "Password",
             type="password"
         )
 
         if st.button("Login"):
-
             user = login_user(
                 username,
                 password
             )
 
             if user:
-
                 st.session_state.logged_in = True
                 st.session_state.username = username
-
                 st.rerun()
-
             else:
-
                 st.error(
                     "Invalid Username or Password"
                 )
 
-            # ==================================================
-# MAIN APP AFTER LOGIN
 # ==================================================
-
+# MAIN APP
+# ==================================================
 else:
+
+    st.sidebar.success(
+        f"Logged in as {st.session_state.username}"
+    )
+
+    if st.sidebar.button("Logout"):
+        st.session_state.logged_in = False
+        st.session_state.username = ""
+        st.rerun()
 
     st.success(
         f"Welcome back, {st.session_state.username}! 🚀"
@@ -146,11 +119,9 @@ else:
         "🚨 Exam Night"
     ])
 
-
-        # =====================================
+    # =====================================
     # TAB 1 : COMMAND CENTER
     # =====================================
-
     with tab1:
 
         st.header("🏠 Command Center")
@@ -159,69 +130,34 @@ else:
             st.session_state.username
         )
 
-        if stats:
+        xp = stats[0]
+        streak = stats[1]
+        sessions = stats[2]
 
-            xp = stats[0]
-            streak = stats[1]
-            sessions = stats[2]
+        col1, col2, col3 = st.columns(3)
 
-            col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("⭐ XP", xp)
 
-            with col1:
-                st.metric(
-                    "⭐ XP",
-                    xp
-                )
+        with col2:
+            st.metric("🔥 Streak", streak)
 
-            with col2:
-                st.metric(
-                    "🔥 Streak",
-                    streak
-                )
+        with col3:
+            st.metric("📚 Sessions", sessions)
 
-            with col3:
-                st.metric(
-                    "📚 Sessions",
-                    sessions
-                )
+        st.divider()
 
         st.subheader(
             f"Welcome, {st.session_state.username} 👋"
         )
 
-        col1, col2 = st.columns(2)
-
-        with col1:
-            st.info(
-                "🔥 Study Streak\n\nWill be calculated from actual activity."
-            )
-
-        with col2:
-            st.info(
-                "⭐ XP\n\nWill be loaded from database."
-            )
-
-        st.divider()
-
-        st.subheader("📊 Learning Analytics")
-
-        st.write(
-            "Analytics will appear after quizzes and study sessions are stored."
+        st.info(
+            "Keep studying to increase your XP and learning streak."
         )
 
-        st.divider()
-
-        st.subheader("🎯 Today's Goal")
-
-        st.write(
-            "Complete at least one learning activity inside Lumina."
-        )
-
-
-       # =====================================
+    # =====================================
     # TAB 2 : STUDY ENGINE
     # =====================================
-
     with tab2:
 
         st.header("💬 Study Engine")
@@ -243,114 +179,93 @@ else:
 
         if st.button("Generate Response"):
 
-            if mode == "🧠 Deep Dive":
-
-                prompt = f"""
-                Explain this topic in detail.
-
-                Include:
-                1. Simple Explanation
-                2. Detailed Explanation
-                3. Real Life Example
-                4. Related Topics
-
-                Topic:
-                {user_input}
-                """
-
-            elif mode == "🧒 Explain Like I'm 10":
-
-                prompt = f"""
-                Explain this topic like I am 10 years old.
-
-                Use:
-                - Simple language
-                - Stories
-                - Analogies
-                - Hinglish examples
-
-                Topic:
-                {user_input}
-                """
-
-            elif mode == "📝 Notes Simplifier":
-
-                prompt = f"""
-                Convert this into:
-
-                1. Short Notes
-                2. Revision Notes
-                3. Key Points
-
-                Content:
-                {user_input}
-                """
+            if not user_input.strip():
+                st.warning(
+                    "Please enter a topic."
+                )
 
             else:
 
-                prompt = f"""
-                Create flashcards.
+                if mode == "🧠 Deep Dive":
+                    prompt = f"""
+Explain this topic in detail.
 
-                Format:
+Topic:
+{user_input}
+"""
 
-                Q:
-                A:
+                elif mode == "🧒 Explain Like I'm 10":
+                    prompt = f"""
+Explain this topic like I am 10 years old.
 
-                Topic:
-                {user_input}
-                """
+Topic:
+{user_input}
+"""
 
-            with st.spinner("Lumina is thinking..."):
+                elif mode == "📝 Notes Simplifier":
+                    prompt = f"""
+Convert this into short notes:
 
-                answer = get_gemini_response(prompt)
+{user_input}
+"""
+
+                else:
+                    prompt = f"""
+Create flashcards for:
+
+{user_input}
+"""
+
+                with st.spinner(
+                    "Lumina is thinking..."
+                ):
+                    answer = get_gemini_response(
+                        prompt
+                    )
+
                 add_xp(
-    st.session_state.username,
-    5
-)
+                    st.session_state.username,
+                    5
+                )
 
-            st.write(answer)
+                st.write(answer)
 
-                # =====================================
+    # =====================================
     # TAB 3 : ASSESSMENT ZONE
     # =====================================
-
     with tab3:
 
         st.header("🎯 Assessment Zone")
 
-        st.subheader("🎤 Viva Simulator")
-
         subject = st.text_input(
-            "Enter Subject",
-            key="viva_subject"
+            "Enter Subject"
         )
 
-        if st.button(
-            "Start Viva",
-            key="start_viva"
-        ):
+        if st.button("Start Viva"):
 
-            prompt = f"""
-            Act as a professional college viva examiner.
+            if subject:
 
-            Subject: {subject}
+                prompt = f"""
+Act as a college viva examiner.
 
-            Ask ONLY ONE viva question.
+Subject:
+{subject}
 
-            Do not provide the answer.
+Ask only one viva question.
+"""
 
-            Wait for the student's response.
-            """
+                with st.spinner(
+                    "Preparing Viva..."
+                ):
+                    question = (
+                        get_gemini_response(
+                            prompt
+                        )
+                    )
 
-            with st.spinner(
-                "Preparing Viva..."
-            ):
-
-                question = get_gemini_response(
-                    prompt
+                st.session_state.viva_question = (
+                    question
                 )
-
-            st.session_state.viva_question = question
 
         if "viva_question" in st.session_state:
 
@@ -359,107 +274,40 @@ else:
             )
 
             student_answer = st.text_area(
-                "Your Answer",
-                key="student_answer"
+                "Your Answer"
             )
 
             if st.button(
-                "Evaluate Answer",
-                key="evaluate_viva"
+                "Evaluate Answer"
             ):
 
-                evaluation_prompt = f"""
-                You are a college viva examiner.
+                prompt = f"""
+Question:
+{st.session_state.viva_question}
 
-                Question:
-                {st.session_state.viva_question}
+Student Answer:
+{student_answer}
 
-                Student Answer:
-                {student_answer}
-
-                Evaluate:
-
-                1. Correctness
-                2. Missing Points
-                3. Suggestions
-                4. Score out of 10
-
-                Give detailed feedback.
-                """
+Evaluate and score out of 10.
+"""
 
                 with st.spinner(
                     "Evaluating..."
                 ):
-
-                    feedback = get_gemini_response(
-                        evaluation_prompt
+                    feedback = (
+                        get_gemini_response(
+                            prompt
+                        )
                     )
 
-                st.success(
-                    feedback
-                )
+                st.success(feedback)
 
-
-        st.divider()
-
-        st.subheader("📝 Quiz Generator")
-
-        quiz_topic = st.text_input(
-            "Enter Topic",
-            key="quiz_topic"
-        )
-
-        if st.button(
-            "Generate Quiz",
-            key="generate_quiz"
-        ):
-
-            prompt = f"""
-            Create 5 MCQs on:
-
-            {quiz_topic}
-
-            Format:
-
-            Q1.
-            A)
-            B)
-            C)
-            D)
-
-            Correct Answer:
-
-            Repeat for all 5 questions.
-            """
-
-            with st.spinner(
-                "Generating Quiz..."
-            ):
-
-                quiz = get_gemini_response(
-                    prompt
-                )
-
-            st.session_state.quiz = quiz
-
-        if "quiz" in st.session_state:
-
-            st.write(
-                st.session_state.quiz
-            )
-
-
-                    # =====================================
-    # TAB 4 : EXAM NIGHT MODE
     # =====================================
-
+    # TAB 4 : EXAM NIGHT
+    # =====================================
     with tab4:
 
         st.header("🚨 Exam Night Mode")
-
-        st.warning(
-            "Exam tomorrow? Don't panic. Lumina will help you revise smartly."
-        )
 
         subject = st.text_input(
             "Enter Subject",
@@ -467,35 +315,29 @@ else:
         )
 
         if st.button(
-            "🚨 EXAM TOMORROW",
-            key="exam_button"
+            "🚨 EXAM TOMORROW"
         ):
 
-            prompt = f"""
-            You are an expert exam preparation coach.
+            if subject:
 
-            Subject:
-            {subject}
+                prompt = f"""
+Subject:
+{subject}
 
-            Generate:
+Generate:
+1. 1 Hour Revision Plan
+2. Most Important Topics
+3. 5 Expected Questions
+4. Last Minute Notes
+"""
 
-            1. 1 Hour Revision Plan
+                with st.spinner(
+                    "Generating..."
+                ):
+                    result = (
+                        get_gemini_response(
+                            prompt
+                        )
+                    )
 
-            2. Most Important Topics
-
-            3. 5 Highly Expected Exam Questions
-
-            4. Last Minute Notes
-
-            Make the response practical and exam-focused.
-            """
-
-            with st.spinner(
-                "Generating Survival Plan..."
-            ):
-
-                result = get_gemini_response(
-                    prompt
-                )
-
-            st.success(result)
+                st.success(result)
