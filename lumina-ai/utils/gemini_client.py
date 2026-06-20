@@ -1,19 +1,22 @@
-import os
+import streamlit as st
 import google.generativeai as genai
-from dotenv import load_dotenv
 
-from dotenv import load_dotenv
-load_dotenv(dotenv_path=".env")
-print("API KEY =", os.getenv("GOOGLE_API_KEY"))
-print("CONFIG CALLED")
+# Read API key from Streamlit Secrets
+API_KEY = st.secrets.get("GOOGLE_API_KEY")
 
-genai.configure(
-    api_key="AQ.Ab8RN6IQrxMkKAPaL6dcAnIsnck2sYO-lD64T03s6NN6dZCAqg"
-)
+if not API_KEY:
+    raise Exception(
+        "GOOGLE_API_KEY not found. Add it in Streamlit Secrets."
+    )
 
-model = genai.GenerativeModel("gemini-2.5-flash")
+genai.configure(api_key=API_KEY)
+
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 
 def get_gemini_response(prompt):
-    response = model.generate_content(prompt)
-    return response.text
+    try:
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        return f"Gemini Error: {e}"
