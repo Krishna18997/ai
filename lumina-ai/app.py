@@ -4,10 +4,7 @@ from database.auth import create_user, login_user
 from database.stats import get_stats, add_xp
 
 # Database initialize
-init_db()
-from database.auth import create_user, login_user
-from utils.gemini_client import get_gemini_response
-from database.stats import add_xp, get_stats
+
 
 
 # ----------------------------
