@@ -1,8 +1,17 @@
+
 import streamlit as st
 
+st.write("1")
+
 from database.auth import create_user, login_user
-from utils.gemini_client import get_gemini_response
+st.write("2")
+
 from database.stats import add_xp, get_stats
+st.write("3")
+
+
+from utils.gemini_client import get_gemini_response
+
 
 
 # ----------------------------
