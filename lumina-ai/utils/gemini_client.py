@@ -1,7 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
 
-# Read API key from Streamlit Secrets
+# Get API key from Streamlit Secrets
 API_KEY = st.secrets.get("GOOGLE_API_KEY")
 
 if not API_KEY:
@@ -9,14 +9,21 @@ if not API_KEY:
         "GOOGLE_API_KEY not found. Add it in Streamlit Secrets."
     )
 
+# Configure Gemini
 genai.configure(api_key=API_KEY)
 
-model = genai.GenerativeModel("gemini-1.5-flash")
+# Create model
+model = genai.GenerativeModel("gemini-2.5-flash")
 
 
 def get_gemini_response(prompt):
     try:
         response = model.generate_content(prompt)
-        return response.text
+
+        if hasattr(response, "text"):
+            return response.text
+
+        return "No response generated."
+
     except Exception as e:
-        return f"Gemini Error: {e}"
+        return f"Gemini Error: {str(e)}"
